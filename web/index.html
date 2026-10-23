@@ -13,11 +13,13 @@
 <body>
   <main class="app">
     <header class="top">
-      <div class="brand">tun<b>IN</b><span class="mode">Guitar</span></div>
+      <div class="brand">tun<b>IN</b></div>
       <button id="start" class="start">Start listening</button>
     </header>
 
-    <!-- 1. the six strings -->
+    <nav class="instruments" id="instruments" aria-label="Instrument"></nav>
+
+    <!-- 1. the strings -->
     <section class="neck" id="strings" aria-label="Guitar strings"></section>
 
     <!-- 2. tuning presets -->
@@ -39,6 +41,12 @@
         <div class="ticks"></div>
         <div class="zone"></div>
         <div class="needle" id="needle"></div>
+      </div>
+      <div class="spec-head">
+        <span>Spectrum</span>
+        <div class="seg" id="view">
+          <button data-v="full" class="on">Full</button><button data-v="focus">Focus</button>
+        </div>
       </div>
       <div class="spectrum"><canvas id="spectrum"></canvas></div>
     </section>
