@@ -56,6 +56,12 @@ const INSTRUMENTS = [
   { id: 'chromatic', name: 'Chromatic', wires: [], groups: [{ name: 'Any', tunings: [{ id: 'any', name: 'Any note', notes: [] }] }] },
 ];
 INSTRUMENTS.forEach(i => { i.tunings = i.groups.flatMap(g => g.tunings); });
+// what the tuning is called once slid: {k} = key note of the pattern, {notes} = the string letters
+const TITLES = { standard: '{k} Standard', 'drop-d': 'Drop {k}', 'double-drop-d': 'Double Drop {k}',
+  'open-g': 'Open {k}', 'open-d': 'Open {k}', 'open-e': 'Open {k}', 'open-a': 'Open {k}', 'open-c': 'Open {k}' };
+const KEYS = { 'open-g': 'G2', 'open-d': 'D2', 'open-e': 'E2', 'open-a': 'A2', 'open-c': 'C2' }; // chord root of open tunings
+INSTRUMENTS.find(i => i.id === 'ukulele').tunings.forEach(t => { t.title = '{notes}'; });
+const FLATS = { 'C#': 'Db', 'D#': 'Eb', 'G#': 'Ab', 'A#': 'Bb' };
 const IN_TUNE_CENTS = 5;
 const AUTO = -1;
 const OFFSET_LIMIT = 96; // semitones either way (typed); the slider covers ±36
@@ -181,7 +187,18 @@ function buildButtons() {
   elButtons.appendChild(a);
 }
 
+function tuningTitle() {
+  if (!strings.length) return '';
+  const pretty = n => FLATS[n] || n;
+  const keyStr = KEYS[tuning.id] ? noteOfMidi(parseMidi(KEYS[tuning.id]) + offset)
+    : strings.reduce((a, b) => (b.midi < a.midi ? b : a));
+  const tpl = tuning.title || TITLES[tuning.id] || '{notes}';
+  const name = tpl.replace('{k}', pretty(keyStr.name)).replace('{notes}', strings.map(s => pretty(s.name)).join(''));
+  return name + (keyStr.cents ? ' ' + fmtCents(keyStr.cents) : '');
+}
+
 function syncSlide() {
+  $('tuningName').textContent = tuningTitle();
   const o = Math.round(offset * 100) / 100;
   elOffset.value = Math.max(-36, Math.min(36, o));
   if (document.activeElement !== elOffNum) elOffNum.value = o;
