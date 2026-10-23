@@ -17,39 +17,59 @@
       <button id="start" class="start">Start listening</button>
     </header>
 
-    <nav class="instruments" id="instruments" aria-label="Instrument"></nav>
+    <div class="layout">
+      <!-- left: instrument, tuning family, slide -->
+      <aside class="side">
+        <h3>Instrument</h3>
+        <nav class="list" id="instruments" aria-label="Instrument"></nav>
 
-    <!-- 1. the strings -->
-    <section class="neck" id="strings" aria-label="Guitar strings"></section>
+        <div class="tuning-block">
+          <h3>Tuning</h3>
+          <div id="tunings" aria-label="Tuning presets"></div>
 
-    <!-- 2. tuning presets -->
-    <section class="tunings" id="tunings" aria-label="Tuning presets"></section>
-
-    <!-- 3. one button per string -->
-    <section class="string-buttons" id="buttons" aria-label="Choose string"></section>
-
-    <!-- 4. frequency UI -->
-    <section class="freq">
-      <div class="readout">
-        <div class="note" id="note">–</div>
-        <div class="detail">
-          <div id="hz" class="hz">0.0 Hz</div>
-          <div id="cents" class="cents">listening…</div>
+          <h3>Slide <span class="off" id="offLabel">0 st</span></h3>
+          <div class="slide">
+            <input type="range" id="offset" min="-36" max="36" step="0.05" value="0" aria-label="Slide all strings">
+            <div class="slide-btns">
+              <button data-d="-1">−1</button><button data-d="-0.1">−.1</button>
+              <button data-d="0.1">+.1</button><button data-d="1">+1</button>
+            </div>
+            <div class="slide-num">
+              <input type="number" id="offNum" step="0.01" value="0" aria-label="Semitones">
+              <span>semitones</span>
+              <button id="offReset">Reset</button>
+            </div>
+          </div>
         </div>
+      </aside>
+
+      <div class="main">
+        <section class="neck" id="strings" aria-label="Strings"></section>
+        <section class="string-buttons" id="buttons" aria-label="Choose string"></section>
+
+        <section class="freq">
+          <div class="readout">
+            <div class="note" id="note">–</div>
+            <div class="detail">
+              <div id="hz" class="hz">0.0 Hz</div>
+              <div id="cents" class="cents">listening…</div>
+            </div>
+          </div>
+          <div class="meter" aria-hidden="true">
+            <div class="ticks"></div>
+            <div class="zone"></div>
+            <div class="needle" id="needle"></div>
+          </div>
+          <div class="spec-head">
+            <span>Spectrum</span>
+            <div class="seg" id="view">
+              <button data-v="full" class="on">Full</button><button data-v="focus">Focus</button>
+            </div>
+          </div>
+          <div class="spectrum"><canvas id="spectrum"></canvas></div>
+        </section>
       </div>
-      <div class="meter" aria-hidden="true">
-        <div class="ticks"></div>
-        <div class="zone"></div>
-        <div class="needle" id="needle"></div>
-      </div>
-      <div class="spec-head">
-        <span>Spectrum</span>
-        <div class="seg" id="view">
-          <button data-v="full" class="on">Full</button><button data-v="focus">Focus</button>
-        </div>
-      </div>
-      <div class="spectrum"><canvas id="spectrum"></canvas></div>
-    </section>
+    </div>
   </main>
   <script src="app.js"></script>
   <script src="register-sw.js"></script>

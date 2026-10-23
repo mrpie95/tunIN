@@ -23,7 +23,7 @@ body {
 button { font: inherit; color: inherit; cursor: pointer; }
 
 .app {
-  max-width: 760px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
   display: flex;
@@ -68,15 +68,35 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @keyframes hum { from { transform: translateX(-.6px); } to { transform: translateX(.6px); } }
 @media (prefers-reduced-motion: reduce) { .str.lit .wire { animation: none; } }
 
-/* ---- tuning presets ---- */
-.tunings { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-.tunings::-webkit-scrollbar { display: none; }
+/* ---- layout: sidebar left ---- */
+.layout { display: grid; grid-template-columns: 270px 1fr; gap: 20px; align-items: start; }
+.main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.side { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; }
+#instruments { flex-direction: row; flex-wrap: wrap; }
+#instruments .chip { width: auto; border-color: var(--line); }
+.side h3 { margin: 14px 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; }
+.side h3:first-child { margin-top: 0; }
+.side h3 .off { color: var(--accent); letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.side h4 { margin: 10px 0 4px 2px; font-size: 12px; font-weight: 500; color: var(--dim); }
+.list { display: flex; flex-direction: column; gap: 4px; }
 .chip {
-  flex: none; background: var(--panel); border: 1px solid var(--line); border-radius: 99px;
-  padding: 7px 14px; font-size: 14px; color: var(--dim); white-space: nowrap;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px; width: 100%; text-align: left;
+  background: transparent; border: 1px solid transparent; border-radius: 9px; padding: 7px 10px; font-size: 14px; color: var(--text);
 }
-.chip small { margin-left: 6px; font-size: 11px; opacity: .7; }
-.chip.active { color: #1a1100; background: var(--accent); border-color: var(--accent); }
+.chip small { font-size: 11px; color: var(--dim); letter-spacing: .04em; }
+.chip:hover { background: var(--panel-2); }
+.chip.active { background: var(--panel-2); border-color: var(--accent); color: var(--accent); }
+.chip.active small { color: var(--accent); opacity: .8; }
+
+.slide input[type=range] { width: 100%; accent-color: var(--accent); margin: 4px 0 8px; }
+.slide-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.slide-btns button, .slide-num button {
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 0; font-size: 13px;
+}
+.slide-num { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--dim); }
+.slide-num input { width: 80px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--text); padding: 6px 8px; font: inherit; }
+.slide-num button { margin-left: auto; padding: 6px 10px; color: var(--text); }
+.off-c { font-size: 10px; color: var(--dim); height: 12px; line-height: 12px; font-variant-numeric: tabular-nums; }
 
 /* ---- string buttons ---- */
 .string-buttons { display: grid; grid-template-columns: repeat(6, 1fr) 1.3fr; gap: 8px; }
@@ -116,11 +136,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .needle.live { opacity: 1; }
 
-.instruments { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
-.instruments::-webkit-scrollbar { display: none; }
-.instruments .chip { font-weight: 600; }
 :root[data-inst="chromatic"] .neck,
-:root[data-inst="chromatic"] .tunings,
+:root[data-inst="chromatic"] .tuning-block,
 :root[data-inst="chromatic"] .string-buttons { display: none; }
 .note sub { font-size: 22px; font-weight: 500; vertical-align: baseline; color: var(--dim); margin-left: 2px; }
 
@@ -136,4 +153,11 @@ canvas { width: 100%; height: 100%; display: block; }
   .wire { height: 100px; }
   .note { font-size: 52px; width: 100px; }
   .sbtn { font-size: 15px; }
+}
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .side { position: static; }
+  .list { flex-direction: row; flex-wrap: wrap; }
+  .list .chip { width: auto; }
 }

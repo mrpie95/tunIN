@@ -1,63 +1,79 @@
 'use strict';
 
-// ---------- instruments & tunings (strings listed as on the instrument) ----------
+// ---------- instruments & tuning families (strings listed as on the instrument) ----------
+// Tunings are patterns at standard pitch; the "slide" shifts every string together
+// (half step down, drop C, or any fraction of a semitone) so there is no preset per key.
 const GUITAR_WIRES = [4.5, 4, 3.4, 2.8, 2.2, 1.8];
 const BASS_WIRES = [6, 5, 4.2, 3.4, 2.8, 2.2];
 const INSTRUMENTS = [
   {
-    id: 'guitar', name: 'Guitar', wires: GUITAR_WIRES, tunings: [
-      { id: 'standard', name: 'Standard', notes: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'] },
-      { id: 'half-down', name: 'Half step down', notes: ['D#2', 'G#2', 'C#3', 'F#3', 'A#3', 'D#4'] },
-      { id: 'full-down', name: 'Full step down', notes: ['D2', 'G2', 'C3', 'F3', 'A3', 'D4'] },
-      { id: 'drop-d', name: 'Drop D', notes: ['D2', 'A2', 'D3', 'G3', 'B3', 'E4'] },
-      { id: 'double-drop-d', name: 'Double Drop D', notes: ['D2', 'A2', 'D3', 'G3', 'B3', 'D4'] },
-      { id: 'dadgad', name: 'DADGAD', notes: ['D2', 'A2', 'D3', 'G3', 'A3', 'D4'] },
-      { id: 'open-g', name: 'Open G', notes: ['D2', 'G2', 'D3', 'G3', 'B3', 'D4'] },
-      { id: 'open-d', name: 'Open D', notes: ['D2', 'A2', 'D3', 'F#3', 'A3', 'D4'] },
-      { id: 'open-e', name: 'Open E', notes: ['E2', 'B2', 'E3', 'G#3', 'B3', 'E4'] },
-      { id: 'open-c', name: 'Open C', notes: ['C2', 'G2', 'C3', 'G3', 'C4', 'E4'] },
+    id: 'guitar', name: 'Guitar', wires: GUITAR_WIRES, groups: [
+      { name: 'Standard', tunings: [{ id: 'standard', name: 'Standard', notes: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'] }] },
+      { name: 'Drop', tunings: [
+        { id: 'drop-d', name: 'Drop D', notes: ['D2', 'A2', 'D3', 'G3', 'B3', 'E4'] },
+        { id: 'double-drop-d', name: 'Double Drop D', notes: ['D2', 'A2', 'D3', 'G3', 'B3', 'D4'] },
+      ] },
+      { name: 'Open', tunings: [
+        { id: 'open-g', name: 'Open G', notes: ['D2', 'G2', 'D3', 'G3', 'B3', 'D4'] },
+        { id: 'open-d', name: 'Open D', notes: ['D2', 'A2', 'D3', 'F#3', 'A3', 'D4'] },
+        { id: 'open-e', name: 'Open E', notes: ['E2', 'B2', 'E3', 'G#3', 'B3', 'E4'] },
+        { id: 'open-a', name: 'Open A', notes: ['E2', 'A2', 'E3', 'A3', 'C#4', 'E4'] },
+        { id: 'open-c', name: 'Open C', notes: ['C2', 'G2', 'C3', 'G3', 'C4', 'E4'] },
+      ] },
+      { name: 'Alternate', tunings: [
+        { id: 'dadgad', name: 'DADGAD', notes: ['D2', 'A2', 'D3', 'G3', 'A3', 'D4'] },
+        { id: 'nashville', name: 'Nashville', notes: ['E3', 'A3', 'D4', 'G4', 'B3', 'E4'] },
+      ] },
     ],
   },
   {
-    id: 'bass', name: 'Bass', wires: BASS_WIRES, tunings: [
-      { id: 'standard', name: 'Standard', notes: ['E1', 'A1', 'D2', 'G2'] },
-      { id: 'half-down', name: 'Half step down', notes: ['D#1', 'G#1', 'C#2', 'F#2'] },
-      { id: 'drop-d', name: 'Drop D', notes: ['D1', 'A1', 'D2', 'G2'] },
-      { id: 'd-standard', name: 'D Standard', notes: ['D1', 'G1', 'C2', 'F2'] },
+    id: 'bass', name: 'Bass', wires: BASS_WIRES, groups: [
+      { name: 'Standard', tunings: [{ id: 'standard', name: 'Standard', notes: ['E1', 'A1', 'D2', 'G2'] }] },
+      { name: 'Drop', tunings: [{ id: 'drop-d', name: 'Drop D', notes: ['D1', 'A1', 'D2', 'G2'] }] },
     ],
   },
   {
-    id: 'bass5', name: 'Bass 5', wires: BASS_WIRES, tunings: [
-      { id: 'standard', name: 'Standard', notes: ['B0', 'E1', 'A1', 'D2', 'G2'] },
-      { id: 'half-down', name: 'Half step down', notes: ['A#0', 'D#1', 'G#1', 'C#2', 'F#2'] },
-      { id: 'high-c', name: 'High C', notes: ['E1', 'A1', 'D2', 'G2', 'C3'] },
+    id: 'bass5', name: 'Bass 5', wires: BASS_WIRES, groups: [
+      { name: 'Standard', tunings: [
+        { id: 'standard', name: 'Standard (BEADG)', notes: ['B0', 'E1', 'A1', 'D2', 'G2'] },
+        { id: 'high-c', name: 'High C', notes: ['E1', 'A1', 'D2', 'G2', 'C3'] },
+      ] },
     ],
   },
   {
-    id: 'bass6', name: 'Bass 6', wires: BASS_WIRES, tunings: [
-      { id: 'standard', name: 'Standard', notes: ['B0', 'E1', 'A1', 'D2', 'G2', 'C3'] },
+    id: 'bass6', name: 'Bass 6', wires: BASS_WIRES, groups: [
+      { name: 'Standard', tunings: [{ id: 'standard', name: 'Standard', notes: ['B0', 'E1', 'A1', 'D2', 'G2', 'C3'] }] },
     ],
   },
   {
-    id: 'ukulele', name: 'Ukulele', wires: [2, 2.6, 2.2, 1.8], tunings: [
-      { id: 'standard', name: 'Standard (GCEA)', notes: ['G4', 'C4', 'E4', 'A4'] },
-      { id: 'baritone', name: 'Baritone', notes: ['D3', 'G3', 'B3', 'E4'] },
+    id: 'ukulele', name: 'Ukulele', wires: [2, 2.6, 2.2, 1.8], groups: [
+      { name: 'Standard', tunings: [
+        { id: 'standard', name: 'Soprano (GCEA)', notes: ['G4', 'C4', 'E4', 'A4'] },
+        { id: 'baritone', name: 'Baritone', notes: ['D3', 'G3', 'B3', 'E4'] },
+      ] },
     ],
   },
-  { id: 'chromatic', name: 'Chromatic', wires: [], tunings: [{ id: 'any', name: 'Any note', notes: [] }] },
+  { id: 'chromatic', name: 'Chromatic', wires: [], groups: [{ name: 'Any', tunings: [{ id: 'any', name: 'Any note', notes: [] }] }] },
 ];
+INSTRUMENTS.forEach(i => { i.tunings = i.groups.flatMap(g => g.tunings); });
 const IN_TUNE_CENTS = 5;
 const AUTO = -1;
+const OFFSET_LIMIT = 96; // semitones either way (typed); the slider covers ±36
 
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 const midiFreq = m => 440 * Math.pow(2, (m - 69) / 12);
-const noteOfMidi = m => ({ midi: m, name: NAMES[((m % 12) + 12) % 12], oct: Math.floor(m / 12) - 1, freq: midiFreq(m) });
-
-function parseNote(s) {
-  const m = /^([A-G])([#b]?)(\d)$/.exec(s);
-  return noteOfMidi((+m[3] + 1) * 12 + SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0));
+// m may be fractional: name/oct are the nearest note, cents says how far off it is
+function noteOfMidi(m) {
+  const n = Math.round(m);
+  return { midi: m, name: NAMES[((n % 12) + 12) % 12], oct: Math.floor(n / 12) - 1, freq: midiFreq(m), cents: (m - n) * 100 };
 }
+function parseMidi(s) {
+  const m = /^([A-G])([#b]?)(\d)$/.exec(s);
+  return (+m[3] + 1) * 12 + SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+}
+const fmtCents = c => (Math.abs(c) < 0.5 ? '' : (c > 0 ? '+' : '−') + Math.round(Math.abs(c)) + '¢');
+const noteLabel = s => s.name + s.oct + fmtCents(s.cents);
 
 // ---------- state ----------
 const store = {
@@ -66,26 +82,33 @@ const store = {
 };
 let inst = INSTRUMENTS.find(i => i.id === store.get('inst')) || INSTRUMENTS[0];
 let tuning, strings, selected = AUTO;
+let offset = 0; // semitones every string is slid by
 let view = store.get('view', 'full');
 let detected = null; // { freq, at }
 let smoothFreq = null;
 let range = { lo: 28, hi: 1500 }; // pitch-detector search range
 
-function applyTuning(t) {
-  tuning = t;
-  strings = t.notes.map(parseNote);
+function computeStrings() {
+  strings = tuning.notes.map(n => noteOfMidi(parseMidi(n) + offset));
   const freqs = strings.map(s => s.freq);
   range = strings.length
-    ? { lo: Math.min(...freqs) * 0.8, hi: Math.max(...freqs) * 2.5 }
+    ? { lo: Math.max(8, Math.min(...freqs) * 0.8), hi: Math.min(4000, Math.max(...freqs) * 2.5) }
     : { lo: 28, hi: 1500 };
 }
-applyTuning(inst.tunings.find(t => t.id === store.get('tuning:' + inst.id)) || inst.tunings[0]);
+function applyTuning(t) { tuning = t; computeStrings(); }
+function loadInstrument(i) {
+  inst = i;
+  offset = +store.get('offset:' + i.id, 0) || 0;
+  applyTuning(i.tunings.find(t => t.id === store.get('tuning:' + i.id)) || i.tunings[0]);
+}
+loadInstrument(inst);
 
 // ---------- DOM ----------
 const $ = id => document.getElementById(id);
 const elInst = $('instruments'), elStrings = $('strings'), elTunings = $('tunings'), elButtons = $('buttons');
 const elNote = $('note'), elHz = $('hz'), elCents = $('cents'), elNeedle = $('needle');
 const elStart = $('start'), canvas = $('spectrum'), g = canvas.getContext('2d');
+const elOffset = $('offset'), elOffNum = $('offNum'), elOffLabel = $('offLabel');
 
 function buildInstruments() {
   elInst.innerHTML = '';
@@ -106,20 +129,33 @@ function buildStrings() {
     const d = document.createElement('div');
     d.className = 'str';
     d.dataset.i = i;
-    d.innerHTML = `<div class="peg">${s.name}</div><div class="wire" style="--w:${inst.wires[i] || 2}px"></div><div class="num">${n - i}</div>`;
+    d.innerHTML = `<div class="peg">${s.name}</div><div class="off-c">${fmtCents(s.cents)}</div>` +
+      `<div class="wire" style="--w:${inst.wires[i] || 2}px"></div><div class="num">${n - i}</div>`;
     d.onclick = () => select(i);
     elStrings.appendChild(d);
   });
 }
 
+// note names of a pattern at the current slide (nearest semitone)
+const patternNames = t => t.notes.map(n => noteOfMidi(parseMidi(n) + offset).name).join(' ');
+
 function buildTunings() {
   elTunings.innerHTML = '';
-  inst.tunings.forEach(t => {
-    const b = document.createElement('button');
-    b.className = 'chip' + (t.id === tuning.id ? ' active' : '');
-    b.innerHTML = `${t.name}<small>${t.notes.map(n => parseNote(n).name).join(' ')}</small>`;
-    b.onclick = () => setTuning(t);
-    elTunings.appendChild(b);
+  inst.groups.forEach(grp => {
+    const h = document.createElement('h4');
+    h.textContent = grp.name;
+    elTunings.appendChild(h);
+    const list = document.createElement('div');
+    list.className = 'list';
+    grp.tunings.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (t.id === tuning.id ? ' active' : '');
+      b.dataset.t = t.id;
+      b.innerHTML = `${t.name}<small>${patternNames(t)}</small>`;
+      b.onclick = () => setTuning(t);
+      list.appendChild(b);
+    });
+    elTunings.appendChild(list);
   });
 }
 
@@ -131,7 +167,7 @@ function buildButtons() {
     const b = document.createElement('button');
     b.className = 'sbtn';
     b.dataset.i = i;
-    b.innerHTML = `${s.name}<small>${n - i}</small>`;
+    b.innerHTML = `${s.name}<small>${n - i}${s.cents ? ' · ' + fmtCents(s.cents) : ''}</small>`;
     b.onclick = () => select(i);
     elButtons.appendChild(b);
   });
@@ -143,18 +179,24 @@ function buildButtons() {
   elButtons.appendChild(a);
 }
 
+function syncSlide() {
+  const o = Math.round(offset * 100) / 100;
+  elOffset.value = Math.max(-36, Math.min(36, o));
+  if (document.activeElement !== elOffNum) elOffNum.value = o;
+  elOffLabel.textContent = (o > 0 ? '+' : o < 0 ? '−' : '') + Math.abs(o) + ' st';
+}
+
 function rebuild() {
   document.documentElement.dataset.inst = inst.id;
-  buildInstruments(); buildStrings(); buildTunings(); buildButtons();
+  buildInstruments(); buildStrings(); buildTunings(); buildButtons(); syncSlide();
   lastLit = -2;
   refreshSelection();
 }
 
 function setInstrument(i) {
-  inst = i;
   store.set('inst', i.id);
   selected = AUTO;
-  applyTuning(i.tunings.find(t => t.id === store.get('tuning:' + i.id)) || i.tunings[0]);
+  loadInstrument(i);
   detected = null; smoothFreq = null;
   rebuild();
 }
@@ -164,6 +206,23 @@ function setTuning(t) {
   store.set('tuning:' + inst.id, t.id);
   selected = AUTO;
   rebuild();
+}
+
+// slide every string by `st` semitones (fractions allowed), keeping them in a sane range
+function setOffset(st) {
+  if (!isFinite(st)) return;
+  const base = tuning.notes.map(parseMidi);
+  if (base.length) {
+    const lo = 12 * Math.log2(5 / midiFreq(Math.min(...base))), hi = 12 * Math.log2(20000 / midiFreq(Math.max(...base)));
+    st = Math.max(lo, Math.min(hi, st));
+  }
+  offset = Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, Math.round(st * 100) / 100));
+  store.set('offset:' + inst.id, offset);
+  computeStrings();
+  detected = null; smoothFreq = null;
+  buildStrings(); buildTunings(); buildButtons(); syncSlide();
+  lastLit = -2;
+  refreshSelection();
 }
 
 function select(i) {
@@ -260,7 +319,9 @@ function detectPitch(buf, sr, fLo, fHi) {
   const tauMax = Math.min(Math.floor(srD / fLo), 1200), tauMin = Math.max(2, Math.floor(srD / fHi));
   const W = Math.max(256, Math.round(tauMax * 1.3));
   const n = W + tauMax + 1;
-  const x = new Float32Array(n), start = buf.length - n * dec;
+  const start = buf.length - n * dec;
+  if (start < 0) return null;
+  const x = new Float32Array(n);
   let rms = 0;
   for (let i = 0; i < n; i++) {
     let s = 0;
@@ -327,7 +388,7 @@ function analyse() {
 }
 
 function setNote(t) {
-  elNote.innerHTML = t ? `${t.name}<sub>${t.oct}</sub>` : '–';
+  elNote.innerHTML = t ? `${t.name}<sub>${t.oct}${t.cents ? ' ' + fmtCents(t.cents) : ''}</sub>` : '–';
 }
 
 function updateReadout() {
@@ -363,10 +424,17 @@ const xOf = f => 8 + Math.log(f / F_MIN) / Math.log(F_MAX / F_MIN) * (W - 16);
 const fOf = x => F_MIN * Math.pow(F_MAX / F_MIN, (x - 8) / (W - 16));
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const fmtHz = f => f >= 1000 ? (f / 1000) + 'k' : f + '';
-const GRID = [20, 30, 40, 50, 60, 80, 100, 150, 200, 300, 400, 500, 800, 1000, 2000, 3000, 5000, 8000, 12000];
+const GRID = [5, 10, 15, 20, 30, 40, 50, 60, 80, 100, 150, 200, 300, 400, 500, 800, 1000, 2000, 3000, 5000, 8000, 12000, 16000, 20000];
 
 function setRange() {
-  if (view === 'full') { F_MIN = 20; F_MAX = Math.min(8000, ctx ? ctx.sampleRate / 2 : 8000); return; }
+  const nyq = ctx ? ctx.sampleRate / 2 : 24000;
+  if (view === 'full') {
+    // 20 Hz–8 kHz, widened when the slide pushes strings outside it
+    const fs = strings.map(s => s.freq);
+    F_MIN = fs.length ? Math.max(2, Math.min(20, Math.min(...fs) * 0.8)) : 20;
+    F_MAX = Math.min(nyq, Math.max(8000, fs.length ? Math.max(...fs) * 2.2 : 0));
+    return;
+  }
   if (strings.length) {
     const fs = strings.map(s => s.freq);
     F_MIN = Math.min(...fs) * 0.75; F_MAX = Math.max(...fs) * 2.2;
@@ -427,6 +495,7 @@ function drawSpectrum() {
   // target lines: one per string (or the nearest note in chromatic mode)
   const idx = currentIndex();
   const targets = strings.length ? strings : (currentTarget() ? [currentTarget()] : []);
+  let lastLabelX = -99;
   targets.forEach((s, i) => {
     if (s.freq < F_MIN || s.freq > F_MAX) return;
     const on = strings.length ? i === idx : true;
@@ -438,7 +507,10 @@ function drawSpectrum() {
     g.beginPath(); g.moveTo(x, top); g.lineTo(x, bottom); g.stroke();
     g.setLineDash([]);
     g.font = (on ? 'bold 12px' : '11px') + ' -apple-system, sans-serif';
-    g.fillText(s.name + s.oct, x, 13);
+    if (on || x - lastLabelX > 30) {
+      g.fillText(on ? noteLabel(s) : s.name + s.oct, x, 13);
+      if (!on) lastLabelX = x;
+    }
     g.globalAlpha = 1;
   });
 
@@ -468,7 +540,14 @@ document.querySelectorAll('#view button').forEach(b => { b.onclick = () => setVi
 setView(view);
 rebuild();
 elStart.onclick = start;
+
+elOffset.oninput = () => setOffset(+elOffset.value);
+elOffNum.onchange = () => { setOffset(+elOffNum.value); syncSlide(); };
+document.querySelectorAll('.slide-btns button').forEach(b => { b.onclick = () => setOffset(offset + +b.dataset.d); });
+$('offReset').onclick = () => setOffset(0);
+
 window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
   const n = strings.length;
   if (e.key >= '1' && e.key <= '9' && +e.key <= n) select(n - +e.key);
   else if (e.key === '0' || e.key.toLowerCase() === 'a') select(AUTO);
