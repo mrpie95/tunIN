@@ -1,0 +1,26 @@
+{
+  "name": "tunin-desktop",
+  "version": "1.0.0",
+  "description": "Desktop wrapper for the tunIN guitar tuner",
+  "main": "main.js",
+  "scripts": {
+    "sync-web": "node -e \"const fs=require('fs');fs.rmSync('web',{recursive:true,force:true});fs.cpSync('../web','web',{recursive:true})\"",
+    "start": "electron .",
+    "prebuild": "npm run sync-web",
+    "predist": "npm run sync-web",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.tunin.app",
+    "productName": "tunIN",
+    "files": ["main.js", "package.json", "web/**/*"],
+    "mac": { "target": ["dmg", "zip"], "category": "public.app-category.music",
+      "extendInfo": { "NSMicrophoneUsageDescription": "tunIN needs the microphone to detect pitch." } },
+    "win": { "target": ["nsis", "zip"] },
+    "linux": { "target": ["AppImage", "deb"], "category": "Audio" }
+  }
+}
