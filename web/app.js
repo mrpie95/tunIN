@@ -64,7 +64,12 @@ INSTRUMENTS.find(i => i.id === 'ukulele').tunings.forEach(t => { t.title = '{not
 const FLATS = { 'C#': 'Db', 'D#': 'Eb', 'G#': 'Ab', 'A#': 'Bb' };
 const IN_TUNE_CENTS = 5;
 const AUTO = -1;
-const OFFSET_LIMIT = 96; // semitones either way (typed); the slider covers ±36
+const OFFSET_LIMIT = 96; // semitones either way
+// The slider is non-linear (sinh): very fine around 0 (~0.7 cent per step), then the
+// reach grows quickly so the far ends cover many octaves. p is slider position -1..1.
+const SLIDE_B = 4, SLIDE_NORM = Math.sinh(SLIDE_B);
+const sliderToSt = p => OFFSET_LIMIT * Math.sinh(SLIDE_B * p) / SLIDE_NORM;
+const stToSlider = st => Math.asinh(st * SLIDE_NORM / OFFSET_LIMIT) / SLIDE_B;
 
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -200,7 +205,7 @@ function tuningTitle() {
 function syncSlide() {
   $('tuningName').textContent = tuningTitle();
   const o = Math.round(offset * 100) / 100;
-  elOffset.value = Math.max(-36, Math.min(36, o));
+  elOffset.value = stToSlider(o);
   if (document.activeElement !== elOffNum) elOffNum.value = o;
   elOffLabel.textContent = (o > 0 ? '+' : o < 0 ? '−' : '') + Math.abs(o) + ' st';
 }
@@ -574,7 +579,12 @@ elStart.onclick = start;
 
 elSmooth.oninput = () => setSmoothing(+elSmooth.value);
 setSmoothing(smoothing);
-elOffset.oninput = () => setOffset(+elOffset.value);
+elOffset.oninput = () => {
+  let st = sliderToSt(+elOffset.value);
+  const r = Math.round(st);
+  if (Math.abs(st - r) < 0.1) st = r; // magnet to whole semitones; use the .1 buttons or the box for fine steps
+  setOffset(st);
+};
 elOffNum.onchange = () => { setOffset(+elOffNum.value); syncSlide(); };
 document.querySelectorAll('.slide-btns button').forEach(b => { b.onclick = () => setOffset(offset + +b.dataset.d); });
 $('offReset').onclick = () => setOffset(0);
