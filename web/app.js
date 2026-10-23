@@ -250,20 +250,29 @@ function stop() {
   refreshSelection();
 }
 
-// YIN pitch detector on the most recent samples, searching only [fLo, fHi]
-const YIN_WINDOW = 4096;
+// YIN pitch detector on the most recent samples, searching only [fLo, fHi].
+// Audio is decimated first (box filter) and the window is sized to the lowest note,
+// so it is cheap enough to run every frame and locks on within a few periods.
 function detectPitch(buf, sr, fLo, fHi) {
-  const tauMax = Math.min(Math.floor(sr / fLo), 2400), tauMin = Math.max(2, Math.floor(sr / fHi));
-  const n = YIN_WINDOW + tauMax;
-  const x = buf.subarray(buf.length - n);
+  const dec = Math.max(1, Math.floor(sr / (fHi * 10)));
+  const srD = sr / dec;
+  const tauMax = Math.min(Math.floor(srD / fLo), 1200), tauMin = Math.max(2, Math.floor(srD / fHi));
+  const W = Math.max(256, Math.round(tauMax * 1.3));
+  const n = W + tauMax + 1;
+  const x = new Float32Array(n), start = buf.length - n * dec;
   let rms = 0;
-  for (let i = 0; i < n; i++) rms += x[i] * x[i];
+  for (let i = 0; i < n; i++) {
+    let s = 0;
+    for (let k = 0; k < dec; k++) s += buf[start + i * dec + k];
+    x[i] = s / dec;
+    rms += x[i] * x[i];
+  }
   if (Math.sqrt(rms / n) < 0.004) return null; // too quiet
 
   const d = new Float32Array(tauMax + 2);
   for (let tau = 1; tau <= tauMax; tau++) {
     let sum = 0;
-    for (let j = 0; j < YIN_WINDOW; j++) { const v = x[j] - x[j + tau]; sum += v * v; }
+    for (let j = 0; j < W; j++) { const v = x[j] - x[j + tau]; sum += v * v; }
     d[tau] = sum;
   }
   let run = 0;
@@ -277,7 +286,7 @@ function detectPitch(buf, sr, fLo, fHi) {
   if (tau < 1) return null;
   const a = d[tau - 1], b = d[tau], c = d[tau + 1];
   const shift = (a - c) / (2 * (a - 2 * b + c) || 1);
-  return sr / (tau + shift);
+  return srD / (tau + shift);
 }
 
 // YIN finds the right note; the FFT peak next to it gives a finer frequency (parabolic interpolation)
@@ -292,13 +301,20 @@ function refineWithFft(f) {
   return Math.abs(Math.log2(fr / f)) < 0.02 ? fr : f;
 }
 
-let frame = 0;
+let envRms = 0;
 function analyse() {
   if (!running) return;
   analyser.getFloatFrequencyData(freqData);
   for (let i = 0; i < freqData.length; i++) peakData[i] = Math.max(freqData[i], peakData[i] - 0.35);
-  if (frame++ % 3 === 0) {
+  {
     analyser.getFloatTimeDomainData(timeData);
+    // pluck onset: a sudden jump in loudness means a new note, so drop the old one at once
+    const nTail = Math.round(ctx.sampleRate * 0.02);
+    let e = 0;
+    for (let i = timeData.length - nTail; i < timeData.length; i++) e += timeData[i] * timeData[i];
+    e = Math.sqrt(e / nTail);
+    if (e > 0.01 && e > envRms * 2.5) { detected = null; smoothFreq = null; }
+    envRms = Math.max(e, envRms * 0.97);
     let f = detectPitch(timeData, ctx.sampleRate, range.lo, range.hi);
     if (f) {
       f = refineWithFft(f);
@@ -306,7 +322,7 @@ function analyse() {
       detected = { freq: smoothFreq, at: performance.now() };
     }
   }
-  if (detected && performance.now() - detected.at > 1200) { detected = null; smoothFreq = null; }
+  if (detected && performance.now() - detected.at > 450) { detected = null; smoothFreq = null; }
 }
 
 function setNote(t) {

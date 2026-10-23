@@ -1,4 +1,4 @@
-const CACHE = 'tunin-v3';
+const CACHE = 'tunin-v4';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './register-sw.js', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'];
 
