@@ -1,4 +1,4 @@
-const CACHE = 'tunin-v11';
+const CACHE = 'tunin-v12';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './register-sw.js', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'];
 
@@ -16,11 +16,18 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // network-first so updates show up immediately; the cache is the offline fallback
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then((hit) => {
-      if (hit) return hit;
-      return fetch(e.request).catch(() =>
-        e.request.mode === 'navigate' ? caches.match('./index.html') : Response.error());
-    })
+    fetch(e.request, { cache: 'no-cache' })
+      .then((res) => {
+        if (res.ok && new URL(e.request.url).origin === location.origin) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+        }
+        return res;
+      })
+      .catch(() =>
+        caches.match(e.request, { ignoreSearch: true }).then((hit) =>
+          hit || (e.request.mode === 'navigate' ? caches.match('./index.html') : Response.error())))
   );
 });
