@@ -182,7 +182,8 @@ function currentIndex() {
   if (!detected) return -1;
   let best = 0, bestErr = Infinity;
   strings.forEach((s, i) => {
-    const e = Math.abs(foldErr(detected.freq, s.freq));
+    // same note in another octave ties on pitch, so prefer the string actually closest in octave
+    const e = Math.abs(foldErr(detected.freq, s.freq)) + 0.01 * Math.abs(Math.log2(detected.freq / s.freq));
     if (e < bestErr) { bestErr = e; best = i; }
   });
   return best;
