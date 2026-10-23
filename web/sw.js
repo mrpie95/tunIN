@@ -1,5 +1,5 @@
-const CACHE = 'tunin-v13';
-const ASSETS = ['./', './index.html', './style.css', './app.js', './register-sw.js', './manifest.webmanifest',
+const CACHE = 'tunin-v15';
+const ASSETS = ['./', './index.html', './style.css', './app.js', './fretboard.js', './register-sw.js', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

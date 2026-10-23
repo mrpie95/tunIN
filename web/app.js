@@ -93,6 +93,7 @@ const store = {
 };
 let inst = INSTRUMENTS.find(i => i.id === store.get('inst')) || INSTRUMENTS[0];
 let tuning, strings, selected = AUTO;
+let stringOff = []; // extra per-string detune in semitones (set by dragging strings on the fretboard)
 let offset = 0; // semitones every string is slid by
 let view = store.get('view', 'full');
 let smoothing = Math.max(0, Math.min(1, +store.get('smoothing', 0.4))); // 0 = raw, 1 = very steady
@@ -101,13 +102,13 @@ let smoothFreq = null;
 let range = { lo: 28, hi: 1500 }; // pitch-detector search range
 
 function computeStrings() {
-  strings = tuning.notes.map(n => noteOfMidi(parseMidi(n) + offset));
+  strings = tuning.notes.map((n, i) => noteOfMidi(parseMidi(n) + offset + (stringOff[i] || 0)));
   const freqs = strings.map(s => s.freq);
   range = strings.length
     ? { lo: Math.max(8, Math.min(...freqs) * 0.8), hi: Math.min(4000, Math.max(...freqs) * 2.5) }
     : { lo: 28, hi: 1500 };
 }
-function applyTuning(t) { tuning = t; computeStrings(); }
+function applyTuning(t) { tuning = t; stringOff = t.notes.map(() => 0); computeStrings(); }
 function loadInstrument(i) {
   inst = i;
   offset = +store.get('offset:' + i.id, 0) || 0;
@@ -199,7 +200,7 @@ function tuningTitle() {
     : strings.reduce((a, b) => (b.midi < a.midi ? b : a));
   const tpl = tuning.title || TITLES[tuning.id] || '{notes}';
   const name = tpl.replace('{k}', pretty(keyStr.name)).replace('{notes}', strings.map(s => pretty(s.name)).join(''));
-  return name + (keyStr.cents ? ' ' + fmtCents(keyStr.cents) : '');
+  return name + (keyStr.cents ? ' ' + fmtCents(keyStr.cents) : '') + (stringOff.some(v => v) ? ' (custom)' : '');
 }
 
 // ruler above the slider: one tick per semitone at its slider position, so the
@@ -286,6 +287,16 @@ function setOffset(st) {
   computeStrings();
   detected = null; smoothFreq = null;
   buildStrings(); buildTunings(); buildButtons(); syncSlide();
+  lastLit = -2;
+  refreshSelection();
+}
+
+// detune one string on its own (continuous, semitones)
+function setStringOff(i, v) {
+  stringOff[i] = Math.max(-36, Math.min(36, Math.round(v * 100) / 100));
+  computeStrings();
+  detected = null; smoothFreq = null;
+  buildStrings(); buildButtons(); syncSlide();
   lastLit = -2;
   refreshSelection();
 }

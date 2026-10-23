@@ -14,6 +14,9 @@
   <main class="app">
     <header class="top">
       <div class="brand">tun<b>IN</b></div>
+      <div class="seg tabs" id="tabs">
+        <button data-view="tune" class="on">Tune</button><button data-view="explore">Explore</button>
+      </div>
       <button id="start" class="start">Start listening</button>
     </header>
 
@@ -46,6 +49,7 @@
       </aside>
 
       <div class="main">
+        <div class="view-tune">
         <section class="neck" id="strings" aria-label="Strings"></section>
         <section class="string-buttons" id="buttons" aria-label="Choose string"></section>
 
@@ -75,10 +79,39 @@
           </div>
           <div class="spectrum"><canvas id="spectrum"></canvas></div>
         </section>
+        </div>
+
+        <div class="view-explore">
+          <section class="panel">
+            <div class="ex-row">
+              <div class="seg" id="exMode"><button data-m="scale" class="on">Scale</button><button data-m="chord">Chord</button><button data-m="notes">Notes</button></div>
+              <select id="exScale" aria-label="Scale"></select>
+              <select id="exChord" aria-label="Chord"></select>
+              <div class="seg" id="exAcc" title="Note names"><button data-a="sharp" class="on">♯</button><button data-a="flat">♭</button></div>
+              <label class="chk"><input type="checkbox" id="exNat"> Naturals only</label>
+              <div class="seg" id="exLabel" title="Dot labels"><button data-l="note" class="on">Notes</button><button data-l="interval">Intervals</button><button data-l="hz">Hz</button></div>
+            </div>
+            <div class="piano" id="piano" aria-label="Note picker"></div>
+            <div class="ex-info" id="exInfo"></div>
+          </section>
+          <section class="panel">
+            <div class="board-head">
+              <span class="hint">Drag a string sideways to detune it · double-click to reset</span>
+              <div class="shape-nav" id="shapeNav">
+                <button id="shapePrev" aria-label="Previous shape">‹</button>
+                <span id="shapeLabel"></span>
+                <button id="shapeNext" aria-label="Next shape">›</button>
+              </div>
+              <button id="exReset" class="small">Reset strings</button>
+            </div>
+            <div class="board-wrap" id="boardWrap"><canvas id="board"></canvas></div>
+          </section>
+        </div>
       </div>
     </div>
   </main>
   <script src="app.js"></script>
+  <script src="fretboard.js"></script>
   <script src="register-sw.js"></script>
 </body>
 </html>
