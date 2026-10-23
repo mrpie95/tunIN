@@ -202,11 +202,52 @@ function tuningTitle() {
   return name + (keyStr.cents ? ' ' + fmtCents(keyStr.cents) : '');
 }
 
+// ruler above the slider: one tick per semitone at its slider position, so the
+// fisheye spacing is visible (tight around 0, stretching toward the ends)
+const vizCanvas = $('slideViz'), vg = vizCanvas.getContext('2d');
+function drawSlideViz() {
+  const r = vizCanvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  if (!r.width) return;
+  if (vizCanvas.width !== Math.round(r.width * dpr)) { vizCanvas.width = r.width * dpr; vizCanvas.height = r.height * dpr; }
+  const w = r.width, h = r.height, pad = 8;
+  vg.setTransform(dpr, 0, 0, dpr, 0, 0);
+  vg.clearRect(0, 0, w, h);
+  const xOf = st => pad + (stToSlider(st) + 1) / 2 * (w - 2 * pad);
+  const accent = css('--accent'), dim = css('--dim'), line = css('--line');
+  const base = h - 12;
+  vg.textAlign = 'center'; vg.font = '9px -apple-system, sans-serif';
+  let lastX = -99;
+  for (let st = -OFFSET_LIMIT; st <= OFFSET_LIMIT; st++) {
+    const x = Math.round(xOf(st)) + .5, oct = st % 12 === 0, five = st % 5 === 0;
+    if (!oct && x - lastX < 3) continue; // thin out where ticks would merge
+    lastX = x;
+    const len = oct ? 16 : five ? 10 : 6;
+    vg.strokeStyle = oct ? dim : line; vg.lineWidth = 1;
+    vg.beginPath(); vg.moveTo(x, base); vg.lineTo(x, base - len); vg.stroke();
+  }
+  // labels at octave marks, with room around them
+  vg.fillStyle = dim;
+  const placed = [];
+  [0, 12, -12, 24, -24, 48, -48, 96, -96].forEach(st => {
+    const x = xOf(st);
+    if (placed.some(p => Math.abs(p - x) < 26)) return; // keep labels from colliding
+    vg.fillText(st > 0 ? '+' + st : st === 0 ? '0' : '−' + Math.abs(st), Math.max(10, Math.min(w - 10, x)), h - 1);
+    placed.push(x);
+  });
+  // where we are now
+  const cx = xOf(Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, offset)));
+  vg.fillStyle = vg.strokeStyle = accent; vg.lineWidth = 2;
+  vg.beginPath(); vg.moveTo(cx, base + 1); vg.lineTo(cx, 4); vg.stroke();
+  vg.beginPath(); vg.moveTo(cx - 4, 0); vg.lineTo(cx + 4, 0); vg.lineTo(cx, 6); vg.fill();
+}
+new ResizeObserver(drawSlideViz).observe(vizCanvas);
+
 function syncSlide() {
   $('tuningName').textContent = tuningTitle();
   const o = Math.round(offset * 100) / 100;
   elOffset.value = stToSlider(o);
   if (document.activeElement !== elOffNum) elOffNum.value = o;
+  drawSlideViz();
   elOffLabel.textContent = (o > 0 ? '+' : o < 0 ? '−' : '') + Math.abs(o) + ' st';
 }
 
