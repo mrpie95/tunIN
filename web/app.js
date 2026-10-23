@@ -119,7 +119,7 @@ loadInstrument(inst);
 // ---------- DOM ----------
 const $ = id => document.getElementById(id);
 const elInst = $('instruments'), elStrings = $('strings'), elTunings = $('tunings'), elButtons = $('buttons');
-const elNote = $('note'), elHz = $('hz'), elCents = $('cents'), elNeedle = $('needle');
+const elNote = $('note'), elHz = $('hz'), elCents = $('cents');
 const elStart = $('start'), canvas = $('spectrum'), g = canvas.getContext('2d');
 const elSmooth = $('smooth'), elSmoothLabel = $('smoothLabel');
 const elOffset = $('offset'), elOffNum = $('offNum'), elOffLabel = $('offLabel');
@@ -380,7 +380,6 @@ function setSmoothing(v) {
   store.set('smoothing', smoothing);
   elSmooth.value = smoothing;
   elSmoothLabel.textContent = smoothing === 0 ? 'Off' : smoothing < 0.34 ? 'Low' : smoothing < 0.67 ? 'Medium' : 'High';
-  elNeedle.style.transitionDuration = (0.06 + smoothing * 0.35) + 's'; // needle glides more when smoother
   if (analyser) analyser.smoothingTimeConstant = spectrumSmoothing();
 }
 
@@ -392,7 +391,7 @@ function stop() {
   elStart.textContent = 'Start listening';
   elStart.classList.remove('on');
   elNote.textContent = '–'; elHz.textContent = '0.0 Hz'; elCents.textContent = 'stopped';
-  elNeedle.classList.remove('live');
+  meterCents = null;
   refreshSelection();
 }
 
@@ -482,7 +481,7 @@ function setNote(t) {
 function updateReadout() {
   const t = currentTarget();
   if (!detected || !t) {
-    elNeedle.classList.remove('live');
+    meterCents = null;
     if (running) { elCents.textContent = 'pluck a string…'; setNote(strings.length ? t : null); }
     refreshSelection();
     return;
@@ -492,9 +491,80 @@ function updateReadout() {
   elHz.textContent = `${detected.freq.toFixed(1)} Hz  →  ${t.freq.toFixed(1)}`;
   elCents.textContent = Math.abs(cents) <= IN_TUNE_CENTS ? 'in tune'
     : `${Math.abs(cents).toFixed(0)} cents ${cents < 0 ? 'flat – tighten' : 'sharp – loosen'}`;
-  elNeedle.classList.add('live');
-  elNeedle.style.left = (50 + Math.max(-50, Math.min(50, cents))) + '%';
+  meterCents = cents;
   refreshSelection(cents);
+}
+
+// ---------- non-linear (symlog) scale ----------
+// Centred on the note you're aiming for: ~16 px per cent right at the target, then each
+// step covers more and more, out to an octave either side. Used by the meter and the Lens spectrum.
+const SL_C0 = 3;
+function makeSlog(maxCents) {
+  const k = Math.log(1 + maxCents / SL_C0);
+  return {
+    max: maxCents,
+    fwd: c => Math.sign(c) * Math.log(1 + Math.abs(c) / SL_C0) / k,              // cents -> -1..1
+    inv: s => Math.sign(s) * SL_C0 * (Math.exp(Math.abs(s) * k) - 1),            // -1..1 -> cents
+  };
+}
+const METER = makeSlog(1200);
+
+let meterCents = null, meterDisp = 0;
+const meterCv = $('meter'), mg = meterCv.getContext('2d');
+function drawMeter() {
+  const dpr = window.devicePixelRatio || 1, r = meterCv.getBoundingClientRect();
+  if (!r.width) return;
+  if (meterCv.width !== Math.round(r.width * dpr) || meterCv.height !== Math.round(r.height * dpr)) {
+    meterCv.width = r.width * dpr; meterCv.height = r.height * dpr;
+  }
+  const w = r.width, h = r.height, mid = w / 2, half = w / 2 - 16;
+  mg.setTransform(dpr, 0, 0, dpr, 0, 0);
+  mg.clearRect(0, 0, w, h);
+  const state = css('--state'), good = css('--good'), dim = css('--dim'), line = css('--line');
+  const X = c => mid + METER.fwd(c) * half;
+  const axisY = 34;
+
+  // in-tune zone
+  mg.fillStyle = good; mg.globalAlpha = Math.abs(meterCents ?? 99) <= IN_TUNE_CENTS ? .35 : .16;
+  mg.beginPath(); mg.roundRect(X(-IN_TUNE_CENTS), 6, X(IN_TUNE_CENTS) - X(-IN_TUNE_CENTS), axisY + 6, 5); mg.fill();
+  mg.globalAlpha = 1;
+
+  // axis + ticks (dense at the target, sparser outward)
+  mg.strokeStyle = line; mg.lineWidth = 1;
+  mg.beginPath(); mg.moveTo(X(-METER.max), axisY); mg.lineTo(X(METER.max), axisY); mg.stroke();
+  const major = [0, 5, 10, 25, 50, 100, 300, 600, 1200];
+  const all = new Set();
+  for (let c = 1; c <= 10; c++) all.add(c);
+  for (let c = 15; c <= 50; c += 5) all.add(c);
+  for (let c = 60; c <= 100; c += 10) all.add(c);
+  for (let c = 150; c <= 300; c += 50) all.add(c);
+  for (let c = 400; c <= 1200; c += 100) all.add(c);
+  major.forEach(c => all.add(c));
+  mg.textAlign = 'center'; mg.font = '10px -apple-system, sans-serif';
+  [...all].forEach(c => {
+    const isMajor = major.includes(c);
+    [c, -c].forEach(v => {
+      if (c === 0 && v < 0) return;
+      const x = Math.round(X(v)) + .5;
+      mg.strokeStyle = isMajor ? dim : line;
+      mg.beginPath(); mg.moveTo(x, axisY); mg.lineTo(x, axisY + (c === 0 ? 14 : isMajor ? 10 : 5)); mg.stroke();
+      if (isMajor && c !== 0) { mg.fillStyle = dim; mg.fillText(c === 1200 ? 'oct' : String(c), x, axisY + 24); }
+    });
+  });
+  mg.fillStyle = dim; mg.textAlign = 'left'; mg.fillText('♭ flat', 2, h - 3);
+  mg.textAlign = 'right'; mg.fillText('sharp ♯', w - 2, h - 3);
+  mg.textAlign = 'center'; mg.fillText('cents', mid, h - 3);
+
+  // needle eases in scale space so it glides without lagging the reading
+  const target = meterCents === null ? meterDisp : METER.fwd(Math.max(-METER.max, Math.min(METER.max, meterCents)));
+  meterDisp += (target - meterDisp) * (0.55 - 0.45 * smoothing);
+  const nx = mid + meterDisp * half;
+  mg.globalAlpha = meterCents === null ? .3 : 1;
+  mg.strokeStyle = mg.fillStyle = state; mg.lineWidth = 3; mg.shadowColor = state; mg.shadowBlur = 10;
+  mg.beginPath(); mg.moveTo(nx, 4); mg.lineTo(nx, axisY + 8); mg.stroke();
+  mg.shadowBlur = 0;
+  mg.beginPath(); mg.moveTo(nx - 5, 0); mg.lineTo(nx + 5, 0); mg.lineTo(nx, 7); mg.fill();
+  mg.globalAlpha = 1;
 }
 
 // ---------- spectrum ----------
@@ -508,14 +578,24 @@ function resize() {
 }
 new ResizeObserver(resize).observe(canvas);
 
-const xOf = f => 8 + Math.log(f / F_MIN) / Math.log(F_MAX / F_MIN) * (W - 16);
-const fOf = x => F_MIN * Math.pow(F_MAX / F_MIN, (x - 8) / (W - 16));
+const LENS = makeSlog(2400); // two octaves each side, so the 2nd and 3rd harmonics stay in view
+let lensC = 110;             // centre frequency of the Lens view (the target note)
+const lensX = f => W / 2 + LENS.fwd(1200 * Math.log2(f / lensC)) * (W / 2 - 8);
+const lensF = x => lensC * Math.pow(2, LENS.inv((x - W / 2) / (W / 2 - 8)) / 1200);
+const xOf = f => (view === 'lens' ? lensX(f) : 8 + Math.log(f / F_MIN) / Math.log(F_MAX / F_MIN) * (W - 16));
+const fOf = x => (view === 'lens' ? lensF(x) : F_MIN * Math.pow(F_MAX / F_MIN, (x - 8) / (W - 16)));
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const fmtHz = f => f >= 1000 ? (f / 1000) + 'k' : f + '';
 const GRID = [5, 10, 15, 20, 30, 40, 50, 60, 80, 100, 150, 200, 300, 400, 500, 800, 1000, 2000, 3000, 5000, 8000, 12000, 16000, 20000];
 
 function setRange() {
   const nyq = ctx ? ctx.sampleRate / 2 : 24000;
+  if (view === 'lens') {
+    const t = currentTarget();
+    lensC = t ? t.freq : detected ? detected.freq : 110;
+    F_MIN = lensC * Math.pow(2, -2); F_MAX = lensC * Math.pow(2, 2);
+    return;
+  }
   if (view === 'full') {
     // 20 Hz–8 kHz, widened when the slide pushes strings outside it
     const fs = strings.map(s => s.freq);
@@ -549,14 +629,17 @@ function drawSpectrum() {
   g.textAlign = 'center';
   g.font = '11px -apple-system, sans-serif';
 
-  // frequency grid
+  // frequency grid (cents around the target in Lens view)
   g.lineWidth = 1;
   let lastX = -99;
-  GRID.forEach(f => {
-    if (f < F_MIN * 1.02 || f > F_MAX) return;
+  const grid = view === 'lens'
+    ? [-1200, -600, -300, -100, -25, -5, 0, 5, 25, 100, 300, 600, 1200].map(c => ({ f: lensC * Math.pow(2, c / 1200), t: c === 0 ? 'target' : (c > 0 ? '+' : '−') + Math.abs(c) + '¢' }))
+    : GRID.map(f => ({ f, t: fmtHz(f) }));
+  grid.forEach(({ f, t }) => {
+    if (view !== 'lens' && (f < F_MIN * 1.02 || f > F_MAX)) return;
     const x = Math.round(xOf(f)) + .5;
     g.strokeStyle = line; g.beginPath(); g.moveTo(x, top); g.lineTo(x, bottom); g.stroke();
-    if (x - lastX > 34) { g.fillStyle = dim; g.fillText(fmtHz(f), x, H - 5); lastX = x; }
+    if (x - lastX > 34) { g.fillStyle = dim; g.fillText(t, x, H - 5); lastX = x; }
   });
 
   // live spectrum (+ faint peak hold)
@@ -614,6 +697,7 @@ function drawSpectrum() {
 function loop() {
   analyse();
   updateReadout();
+  drawMeter();
   drawSpectrum();
   requestAnimationFrame(loop);
 }
