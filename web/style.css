@@ -161,3 +161,7 @@ canvas { width: 100%; height: 100%; display: block; }
   .list { flex-direction: row; flex-wrap: wrap; }
   .list .chip { width: auto; }
 }
+
+.smooth { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--dim); margin-bottom: 14px; }
+.smooth input { flex: 1; accent-color: var(--accent); }
+.smooth b { width: 60px; text-align: right; font-weight: 500; color: var(--text); }

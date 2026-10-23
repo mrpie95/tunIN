@@ -84,6 +84,7 @@ let inst = INSTRUMENTS.find(i => i.id === store.get('inst')) || INSTRUMENTS[0];
 let tuning, strings, selected = AUTO;
 let offset = 0; // semitones every string is slid by
 let view = store.get('view', 'full');
+let smoothing = Math.max(0, Math.min(1, +store.get('smoothing', 0.4))); // 0 = raw, 1 = very steady
 let detected = null; // { freq, at }
 let smoothFreq = null;
 let range = { lo: 28, hi: 1500 }; // pitch-detector search range
@@ -108,6 +109,7 @@ const $ = id => document.getElementById(id);
 const elInst = $('instruments'), elStrings = $('strings'), elTunings = $('tunings'), elButtons = $('buttons');
 const elNote = $('note'), elHz = $('hz'), elCents = $('cents'), elNeedle = $('needle');
 const elStart = $('start'), canvas = $('spectrum'), g = canvas.getContext('2d');
+const elSmooth = $('smooth'), elSmoothLabel = $('smoothLabel');
 const elOffset = $('offset'), elOffNum = $('offNum'), elOffLabel = $('offLabel');
 
 function buildInstruments() {
@@ -282,7 +284,7 @@ async function start() {
     const src = ctx.createMediaStreamSource(micStream);
     analyser = ctx.createAnalyser();
     analyser.fftSize = FFT_SIZE;
-    analyser.smoothingTimeConstant = 0.6;
+    analyser.smoothingTimeConstant = spectrumSmoothing();
     analyser.minDecibels = -110;
     analyser.maxDecibels = -20;
     src.connect(analyser);
@@ -296,6 +298,16 @@ async function start() {
   } catch (e) {
     elCents.textContent = 'Microphone unavailable: ' + (e.message || e.name);
   }
+}
+
+const spectrumSmoothing = () => 0.3 + 0.6 * smoothing;
+function setSmoothing(v) {
+  smoothing = Math.max(0, Math.min(1, v));
+  store.set('smoothing', smoothing);
+  elSmooth.value = smoothing;
+  elSmoothLabel.textContent = smoothing === 0 ? 'Off' : smoothing < 0.34 ? 'Low' : smoothing < 0.67 ? 'Medium' : 'High';
+  elNeedle.style.transitionDuration = (0.06 + smoothing * 0.35) + 's'; // needle glides more when smoother
+  if (analyser) analyser.smoothingTimeConstant = spectrumSmoothing();
 }
 
 function stop() {
@@ -380,7 +392,9 @@ function analyse() {
     let f = detectPitch(timeData, ctx.sampleRate, range.lo, range.hi);
     if (f) {
       f = refineWithFft(f);
-      smoothFreq = smoothFreq && Math.abs(Math.log2(f / smoothFreq)) < 0.04 ? smoothFreq * 0.6 + f * 0.4 : f;
+      // exponential smoothing; a big jump (new note) skips it so plucks still lock instantly
+      const alpha = Math.pow(0.04, smoothing); // weight of the newest reading: 1 (off) .. 0.04 (max)
+      smoothFreq = smoothFreq && Math.abs(Math.log2(f / smoothFreq)) < 0.04 ? smoothFreq * (1 - alpha) + f * alpha : f;
       detected = { freq: smoothFreq, at: performance.now() };
     }
   }
@@ -541,6 +555,8 @@ setView(view);
 rebuild();
 elStart.onclick = start;
 
+elSmooth.oninput = () => setSmoothing(+elSmooth.value);
+setSmoothing(smoothing);
 elOffset.oninput = () => setOffset(+elOffset.value);
 elOffNum.onchange = () => { setOffset(+elOffNum.value); syncSlide(); };
 document.querySelectorAll('.slide-btns button').forEach(b => { b.onclick = () => setOffset(offset + +b.dataset.d); });
