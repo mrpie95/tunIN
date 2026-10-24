@@ -65,11 +65,10 @@ const FLATS = { 'C#': 'Db', 'D#': 'Eb', 'G#': 'Ab', 'A#': 'Bb' };
 const IN_TUNE_CENTS = 5;
 const AUTO = -1;
 const OFFSET_LIMIT = 96; // semitones either way
-// The slider is non-linear (sinh): very fine around 0 (~0.7 cent per step), then the
-// reach grows quickly so the far ends cover many octaves. p is slider position -1..1.
-const SLIDE_B = 4, SLIDE_NORM = Math.sinh(SLIDE_B);
-const sliderToSt = p => OFFSET_LIMIT * Math.sinh(SLIDE_B * p) / SLIDE_NORM;
-const stToSlider = st => Math.asinh(st * SLIDE_NORM / OFFSET_LIMIT) / SLIDE_B;
+// The slide slider is linear: p (-1..1) covers ±SLIDE_RANGE semitones; the number box reaches ±OFFSET_LIMIT.
+const SLIDE_RANGE = 36;
+const sliderToSt = p => p * SLIDE_RANGE;
+const stToSlider = st => Math.max(-1, Math.min(1, st / SLIDE_RANGE));
 
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -203,8 +202,7 @@ function tuningTitle() {
   return name + (keyStr.cents ? ' ' + fmtCents(keyStr.cents) : '') + (stringOff.some(v => v) ? ' (custom)' : '');
 }
 
-// ruler above the slider: one tick per semitone at its slider position, so the
-// fisheye spacing is visible (tight around 0, stretching toward the ends)
+// ruler above the slider: one tick per semitone at its slider position
 const vizCanvas = $('slideViz'), vg = vizCanvas.getContext('2d');
 function drawSlideViz() {
   const r = vizCanvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
@@ -218,7 +216,7 @@ function drawSlideViz() {
   const base = h - 12;
   vg.textAlign = 'center'; vg.font = '9px -apple-system, sans-serif';
   let lastX = -99;
-  for (let st = -OFFSET_LIMIT; st <= OFFSET_LIMIT; st++) {
+  for (let st = -SLIDE_RANGE; st <= SLIDE_RANGE; st++) {
     const x = Math.round(xOf(st)) + .5, oct = st % 12 === 0, five = st % 5 === 0;
     if (!oct && x - lastX < 3) continue; // thin out where ticks would merge
     lastX = x;
@@ -229,14 +227,14 @@ function drawSlideViz() {
   // labels at octave marks, with room around them
   vg.fillStyle = dim;
   const placed = [];
-  [0, 12, -12, 24, -24, 48, -48, 96, -96].forEach(st => {
+  [0, 12, -12, 24, -24, 36, -36].forEach(st => {
     const x = xOf(st);
     if (placed.some(p => Math.abs(p - x) < 26)) return; // keep labels from colliding
     vg.fillText(st > 0 ? '+' + st : st === 0 ? '0' : '−' + Math.abs(st), Math.max(10, Math.min(w - 10, x)), h - 1);
     placed.push(x);
   });
   // where we are now
-  const cx = xOf(Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, offset)));
+  const cx = xOf(Math.max(-SLIDE_RANGE, Math.min(SLIDE_RANGE, offset)));
   vg.fillStyle = vg.strokeStyle = accent; vg.lineWidth = 2;
   vg.beginPath(); vg.moveTo(cx, base + 1); vg.lineTo(cx, 4); vg.stroke();
   vg.beginPath(); vg.moveTo(cx - 4, 0); vg.lineTo(cx + 4, 0); vg.lineTo(cx, 6); vg.fill();
