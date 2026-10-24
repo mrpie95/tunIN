@@ -215,7 +215,8 @@ function setTab(v) {
 $('tabs').onclick = e => { const b = e.target.closest('button'); if (b) setTab(b.dataset.view); };
 
 // ---------- fretboard canvas ----------
-const FRETS = 22, GUT = 92, TOP = 30, PADR = 16, ROW = 46;
+const FRETS = 24, PADR = 16;
+let GUT = 92, TOP = 30, ROW = 46, SC = 1;
 const bc = $('board'), bg = bc.getContext('2d'), wrap = $('boardWrap');
 let BW = 720, BH = 300, boardW = 0, hover = null, drag = null;
 const NORM = 1 - Math.pow(2, -FRETS / 12);
@@ -228,7 +229,9 @@ const fmtF = f => (f >= 1000 ? f.toFixed(0) : f >= 100 ? f.toFixed(1) : f.toFixe
 function sizeBoard() {
   const dpr = window.devicePixelRatio || 1;
   BW = Math.max(wrap.clientWidth, 720);
-  BH = TOP + Math.max(strings.length, 1) * ROW + 22;
+  SC = Math.min(1.8, Math.max(1, BW / 900));
+  GUT = Math.round(92 * Math.min(SC, 1.35)); TOP = Math.round(30 * Math.min(SC, 1.3)); ROW = Math.round(46 * SC);
+  BH = TOP + Math.max(strings.length, 1) * ROW + Math.round(22 * SC);
   if (bc.width !== Math.round(BW * dpr) || bc.height !== Math.round(BH * dpr)) {
     bc.width = BW * dpr; bc.height = BH * dpr;
     bc.style.width = BW + 'px'; bc.style.height = BH + 'px';
@@ -254,7 +257,7 @@ function collectDots(set, voicing) {
       if (f > FRETS) alpha = Math.max(0, 1 - (f - FRETS) / 0.5);
       if (alpha <= 0) continue;
       const fc = Math.max(0, Math.min(FRETS, f));
-      const r = Math.max(9, Math.min(14, dxF(fc) * 0.46));
+      const r = Math.max(9 * SC, Math.min(14 * SC, dxF(fc) * 0.46));
       // open-string dots sit just left of the nut and slide onto the board as the string goes flat
       const x = xF(fc) - r * 1.35 * Math.max(0, 1 - fc / 0.6);
       let voiced = true;
@@ -290,23 +293,23 @@ function drawBoard() {
 
   // inlays
   g2.fillStyle = 'rgba(255,255,255,.07)';
-  [3, 5, 7, 9, 15, 17, 19, 21].forEach(f => { g2.beginPath(); g2.arc((xF(f - 1) + xF(f)) / 2, TOP + n * ROW / 2, 5, 0, 7); g2.fill(); });
-  [-1, 1].forEach(k => { g2.beginPath(); g2.arc((xF(11) + xF(12)) / 2, TOP + n * ROW / 2 + k * ROW * Math.min(1, n / 4) * 0.9, 5, 0, 7); g2.fill(); });
+  [3, 5, 7, 9, 15, 17, 19, 21].forEach(f => { g2.beginPath(); g2.arc((xF(f - 1) + xF(f)) / 2, TOP + n * ROW / 2, 5 * SC, 0, 7); g2.fill(); });
+  [-1, 1].forEach(k => { g2.beginPath(); g2.arc((xF(11) + xF(12)) / 2, TOP + n * ROW / 2 + k * ROW * Math.min(1, n / 4) * 0.9, 5 * SC, 0, 7); g2.fill(); });
 
   // fret numbers + wires + nut
-  g2.textAlign = 'center'; g2.font = '500 10px -apple-system, sans-serif';
+  g2.textAlign = 'center'; g2.font = `500 ${Math.round(10 * SC)}px -apple-system, sans-serif`;
   for (let f = 1; f <= FRETS; f++) {
     const x = Math.round(xF(f)) + .5;
     g2.strokeStyle = '#2f3540'; g2.lineWidth = 1.2;
     g2.beginPath(); g2.moveTo(x, TOP); g2.lineTo(x, TOP + n * ROW); g2.stroke();
     g2.fillStyle = [3, 5, 7, 9, 12, 15, 17, 19, 21].includes(f) ? '#9aa3b2' : '#566070';
-    g2.fillText(f, (xF(f - 1) + xF(f)) / 2, TOP - 10);
+    g2.fillText(f, (xF(f - 1) + xF(f)) / 2, TOP - 10 * Math.min(SC, 1.3));
   }
-  g2.fillStyle = '#c9ced8'; g2.fillRect(GUT - 3, TOP, 5, n * ROW);
+  g2.fillStyle = '#c9ced8'; g2.fillRect(GUT - 3, TOP, Math.round(5 * Math.sqrt(SC)), n * ROW);
 
   // strings
   strings.forEach((s, i) => {
-    const y = rowY(i), w = Math.max(1.2, Math.min(4, (inst.wires[i] || 2) * 0.55));
+    const y = rowY(i), w = Math.sqrt(SC) * Math.max(1.2, Math.min(4, (inst.wires[i] || 2) * 0.55));
     const gr = g2.createLinearGradient(0, y - w, 0, y + w);
     gr.addColorStop(0, '#6f7480'); gr.addColorStop(.5, '#d6dae3'); gr.addColorStop(1, '#6f7480');
     g2.fillStyle = gr; g2.fillRect(GUT, y - w / 2, boardW + PADR - 8, w);
@@ -325,20 +328,20 @@ function drawBoard() {
     g2.globalAlpha = d.alpha;
     if (d.iv === 0) { g2.shadowColor = col; g2.shadowBlur = 14; }
     g2.fillStyle = col;
-    const pw = hz ? Math.max(34, d.r * 2.6) : d.r * 2;
+    const pw = hz ? Math.max(34 * SC, d.r * 2.6) : d.r * 2;
     if (hz) rrect(d.x - pw / 2, d.y - d.r, pw, d.r * 2, d.r); else { g2.beginPath(); g2.arc(d.x, d.y, d.r, 0, 7); }
     g2.fill();
     g2.shadowBlur = 0;
     if (d.pc === dpc && d.voiced) { g2.strokeStyle = '#fff'; g2.lineWidth = 2; g2.stroke(); }
     g2.fillStyle = '#0d0f13';
-    g2.font = `700 ${hz ? Math.max(10, d.r * 0.85) : Math.max(10, d.r * 0.95)}px -apple-system, "SF Pro Text", sans-serif`;
+    g2.font = `700 ${hz ? Math.max(10 * SC, d.r * 0.85) : Math.max(10 * SC, d.r * 0.95)}px -apple-system, "SF Pro Text", sans-serif`;
     g2.fillText(dotLabel(d), d.x, d.y + 0.5);
     g2.globalAlpha = 1;
   });
 
   // muted strings in the shown chord shape
   if (voicing) {
-    g2.fillStyle = dim; g2.font = '600 14px -apple-system, sans-serif';
+    g2.fillStyle = dim; g2.font = `600 ${Math.round(14 * SC)}px -apple-system, sans-serif`;
     voicing.forEach((f, i) => { if (f < 0) g2.fillText('×', GUT - 18, rowY(i)); });
   }
 
@@ -347,10 +350,10 @@ function drawBoard() {
   strings.forEach((s, i) => {
     const y = rowY(i), off = stringOff[i] || 0;
     g2.fillStyle = off ? accent : '#e8eaee';
-    g2.font = '700 14px -apple-system, "SF Pro Text", sans-serif';
-    g2.fillText(`${pcName(Math.round(s.midi))}${s.oct}${s.cents ? ' ' + fmtCents(s.cents) : ''}`, 8, y - 7);
-    g2.fillStyle = dim; g2.font = '500 11px -apple-system, sans-serif';
-    g2.fillText(`${s.freq.toFixed(2)} Hz`, 8, y + 9);
+    const fs = Math.min(SC, 1.35); g2.font = `700 ${Math.round(14 * fs)}px -apple-system, "SF Pro Text", sans-serif`;
+    g2.fillText(`${pcName(Math.round(s.midi))}${s.oct}${s.cents ? ' ' + fmtCents(s.cents) : ''}`, 8, y - 7 * fs);
+    g2.fillStyle = dim; g2.font = `500 ${Math.round(11 * fs)}px -apple-system, sans-serif`;
+    g2.fillText(`${s.freq.toFixed(2)} Hz`, 8, y + 9 * fs);
   });
 
   // hover tooltip
@@ -359,13 +362,14 @@ function drawBoard() {
     if (d) {
       const lines = [`${pcName(d.pc)}${Math.floor(d.m / 12) - 1}`, `${midiFreq(d.m).toFixed(2)} Hz`,
         `fret ${Math.abs(d.f - Math.round(d.f)) < 0.005 ? Math.round(d.f) : d.f.toFixed(2)} · ${IV_NAMES[((d.pc - ex.root) % 12 + 12) % 12]}`];
-      g2.font = '600 12px -apple-system, sans-serif';
-      const tw = Math.max(...lines.map(l => g2.measureText(l).width)) + 18, th = 58;
+      const ts = Math.min(SC, 1.5);
+      g2.font = `600 ${Math.round(12 * ts)}px -apple-system, sans-serif`;
+      const tw = Math.max(...lines.map(l => g2.measureText(l).width)) + 18 * ts, th = 58 * ts;
       const tx = Math.min(BW - tw - 4, Math.max(4, d.x - tw / 2)), ty = d.y - d.r - th - 6 < 2 ? d.y + d.r + 6 : d.y - d.r - th - 6;
       g2.fillStyle = '#0b0c0f'; g2.strokeStyle = '#3a404b'; g2.lineWidth = 1;
       rrect(tx, ty, tw, th, 8); g2.fill(); g2.stroke();
       g2.textAlign = 'left';
-      lines.forEach((l, k) => { g2.fillStyle = k === 0 ? '#fff' : k === 1 ? accent : dim; g2.fillText(l, tx + 9, ty + 14 + k * 16); });
+      lines.forEach((l, k) => { g2.fillStyle = k === 0 ? '#fff' : k === 1 ? accent : dim; g2.fillText(l, tx + 9 * ts, ty + 14 * ts + k * 16 * ts); });
     }
   }
   g2.textBaseline = 'alphabetic';

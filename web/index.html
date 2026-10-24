@@ -13,11 +13,14 @@
 <body>
   <main class="app">
     <header class="top">
-      <div class="brand">tun<b>IN</b></div>
+      <div class="brand">tun<b>IN</b><span class="ver-tag" id="verTag"></span></div>
       <div class="seg tabs" id="tabs">
         <button data-view="tune" class="on">Tune</button><button data-view="explore">Explore</button>
       </div>
-      <button id="start" class="start">Start listening</button>
+      <div class="top-right">
+        <button id="aboutBtn" class="icon-btn" aria-label="About tunIN" title="About">i</button>
+        <button id="start" class="start">Start listening</button>
+      </div>
     </header>
 
     <div class="layout">
@@ -106,8 +109,20 @@
       </div>
     </div>
   </main>
+  <dialog id="about" aria-labelledby="aboutTitle">
+    <div class="about-head">
+      <div><h2 id="aboutTitle">tun<b>IN</b></h2><div class="about-ver" id="aboutVer"></div></div>
+      <button id="aboutClose" class="icon-btn" aria-label="Close">✕</button>
+    </div>
+    <p>A tuner and fretboard explorer for guitar, bass and ukulele. It listens through your microphone, finds the pitch with an FFT and a YIN detector, and shows how far off the string is on a scale that zooms in on your target note.</p>
+    <p class="about-links"><a href="https://github.com/mrpie95/tunIN" target="_blank" rel="noopener">Source on GitHub</a></p>
+    <h3>Build log</h3>
+    <div class="changelog" id="changelog">Loading…</div>
+  </dialog>
+  <script src="version.js"></script>
   <script src="app.js"></script>
   <script src="fretboard.js"></script>
+  <script src="about.js"></script>
   <script src="register-sw.js"></script>
 </body>
 </html>

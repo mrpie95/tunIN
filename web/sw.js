@@ -1,5 +1,6 @@
-const CACHE = 'tunin-v17';
-const ASSETS = ['./', './index.html', './style.css', './app.js', './fretboard.js', './register-sw.js', './manifest.webmanifest',
+importScripts('version.js'); // defines APP_VERSION
+const CACHE = 'tunin-v' + APP_VERSION;
+const ASSETS = ['./', './index.html', './style.css', './version.js', './app.js', './about.js', './fretboard.js', './CHANGELOG.md', './register-sw.js', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
